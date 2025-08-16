@@ -1,24 +1,163 @@
-import './style.css'
-import typescriptLogo from './typescript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.ts'
+// @ts-nocheck
+figma.showUI(__html__, { width: 400, height: 240 });
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-    </a>
-    <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite and TypeScript logos to learn more
-    </p>
-  </div>
-`
+figma.ui.onmessage = async (msg) => {
+  if (msg.type === "get-csv")
+  {
+    const rows = parseCSV(msg.csv);
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+    const selection = figma.currentPage.selection[0];
+    if (!selection)
+    {
+      figma.notify("⚠️ Select a component first!");
+      return;
+    }
+
+    // Collect all fonts we need
+    const fonts = collectFonts(selection);
+    await Promise.all(fonts.map(figma.loadFontAsync));
+
+    const parent = selection.parent;
+    if (!parent)
+    {
+      figma.notify("⚠️ Selected component has no parent frame!");
+      return;
+    }
+
+    // 1️⃣ Populate the selected component with the first row of data
+    await replaceFields(selection, rows[0]);
+
+    // 2️⃣ Remove old generated clones (cleanup, if any)
+    for (const child of parent.children)
+    {
+      if (child !== selection && child.name === `${selection.name}_instance`)
+      {
+        child.remove();
+      }
+    }
+
+    // 3️⃣ Duplicate for remaining rows
+    rows.slice(1).forEach(async (row, i) => {
+      const clone = selection.clone();
+      clone.name = `${selection.name}_instance`;
+      parent.insertChild(parent.children.indexOf(selection) + i + 1, clone);
+
+      await replaceFields(clone, row);
+    });
+
+    figma.notify(`✅ Populated ${rows.length} components`);
+  }
+};
+
+// --- CSV parser ---
+function parseCSV(csv) {
+  const lines = csv.trim().split("\n");
+  const headers = lines[0].split(",");
+  return lines.slice(1).map(line => {
+    const values = line.split(",");
+    return headers.reduce((obj, key, i) => {
+      obj[key.trim()] = values[i] ? values[i].trim() : "";
+      return obj;
+    }, {});
+  });
+}
+
+// --- Recursively collect all fonts used in node ---
+function collectFonts(node) {
+  let fonts = [];
+  if ("children" in node)
+  {
+    for (const child of node.children)
+    {
+      if (child.type === "TEXT")
+      {
+        const font = child.fontName;
+        if (font !== figma.mixed)
+        {
+          fonts.push(font);
+        }
+      }
+      fonts = fonts.concat(collectFonts(child));
+    }
+  }
+  return fonts;
+}
+
+async function replaceFields(node, row) {
+  if ("children" in node)
+  {
+    for (const child of node.children)
+    {
+      const name = child.name.trim();
+
+      // Handle text layers
+      if (child.type === "TEXT" && name.startsWith("#"))
+      {
+        const key = name; // #Title, #Subhead, etc.
+        if (row[key])
+        {
+          await figma.loadFontAsync({ family: "Roboto", style: "Regular" });
+          child.characters = row[key];
+        }
+      }
+
+      // Handle #Image (including groups)
+      if (name === "#Image")
+      {
+        await handleImageNode(child, row["#Image"]);
+      }
+
+      // Recurse deeper
+      await replaceFields(child, row);
+    }
+  }
+}
+
+// --- Handle image node (works for Group or shapes) ---
+async function handleImageNode(node, url) {
+  if (!url || !url.startsWith("http")) return;
+
+  // If node supports fills, apply directly
+  if ("fills" in node)
+  {
+    try
+    {
+      const imageBytes = await fetchImage(url);
+      const image = figma.createImage(imageBytes);
+      node.fills = [
+        {
+          type: "IMAGE",
+          scaleMode: "FILL",
+          imageHash: image.hash,
+        },
+      ];
+      return;
+    } catch (err)
+    {
+      console.error("❌ Failed to load image:", err);
+      return;
+    }
+  }
+
+  // If node is a group, search inside for the first fillable shape
+  if ("children" in node)
+  {
+    for (const child of node.children)
+    {
+      if ("fills" in child)
+      {
+        return handleImageNode(child, url); // recurse until fillable
+      }
+    }
+  }
+
+  console.warn(`⚠️ No fillable shape found inside node "${node.name}"`);
+}
+
+// --- Fetch image helper ---
+async function fetchImage(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`);
+  const arrayBuffer = await res.arrayBuffer();
+  return new Uint8Array(arrayBuffer);
+}
