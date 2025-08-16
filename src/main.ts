@@ -1,5 +1,20 @@
 // @ts-nocheck
-figma.showUI(__html__, { width: 400, height: 240 });
+// You don’t need to change much here
+figma.showUI(__html__, {
+  width: 600,
+  height: 600,
+  themeColors: true,
+  visible: true
+});
+
+// ✅ Allow user to resize freely
+// figma.ui.resize(600, 400) // sets a new size programmatically
+figma.ui.onmessage = (msg) => {
+  if (msg.type === 'resize')
+  {
+    figma.ui.resize(msg.width, msg.height)
+  }
+}
 
 figma.ui.onmessage = async (msg) => {
   if (msg.type === "get-csv")
@@ -13,41 +28,35 @@ figma.ui.onmessage = async (msg) => {
       return;
     }
 
-    // Collect all fonts we need
     const fonts = collectFonts(selection);
     await Promise.all(fonts.map(figma.loadFontAsync));
 
-    const parent = selection.parent;
-    if (!parent)
-    {
-      figma.notify("⚠️ Selected component has no parent frame!");
-      return;
-    }
-
-    // 1️⃣ Populate the selected component with the first row of data
-    await replaceFields(selection, rows[0]);
-
-    // 2️⃣ Remove old generated clones (cleanup, if any)
-    for (const child of parent.children)
-    {
-      if (child !== selection && child.name === `${selection.name}_instance`)
+    rows.forEach((row, i) => {
+      let targetNode;
+      if (i === 0)
       {
-        child.remove();
+        // populate the original selection
+        targetNode = selection;
+      } else
+      {
+        // clone for other rows
+        targetNode = selection.clone();
+        if (selection.parent)
+        {
+          selection.parent.appendChild(targetNode);
+        } else
+        {
+          figma.currentPage.appendChild(targetNode);
+        }
+        targetNode.x = selection.x + i * (selection.width + 40);
       }
-    }
-
-    // 3️⃣ Duplicate for remaining rows
-    rows.slice(1).forEach(async (row, i) => {
-      const clone = selection.clone();
-      clone.name = `${selection.name}_instance`;
-      parent.insertChild(parent.children.indexOf(selection) + i + 1, clone);
-
-      await replaceFields(clone, row);
+      replaceFields(targetNode, row);
     });
 
     figma.notify(`✅ Populated ${rows.length} components`);
   }
 };
+
 
 // --- CSV parser ---
 function parseCSV(csv) {
