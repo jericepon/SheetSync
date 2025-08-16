@@ -109,6 +109,14 @@
   </head>
   <body>
     <h3>Upload CSV</h3>
+    <div>
+      <label>
+        <input type="checkbox" id="hugCheckbox" />
+        Hug contents
+      </label>
+    </div>
+    <div id="loading" style="display: none">Loading…</div>
+
     <input type="file" id="csvFile" accept=".csv" />
     <b>OR</b>
     <textarea
@@ -116,11 +124,15 @@
       placeholder="Paste CSV here..."
       style="width: 100%; height: 120px"
     ></textarea>
-    <button id="import">Import</button>
+    <button id="generate">Import</button>
     <script type="module" src="./src/main.ts"></script>
     <script>
       let csvText;
-      document.getElementById("csvFile").addEventListener("change", (e) => {
+      const generateButton = document.getElementById("generate");
+      const hugCheckbox = document.getElementById("hugCheckbox");
+      const csvFile = document.getElementById("csvFile");
+
+      csvFile.addEventListener("change", (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
@@ -131,11 +143,20 @@
         reader.readAsText(file);
       });
 
-      document.getElementById("import").onclick = () => {
-        const csv = document.getElementById("csv").value;
-        
+      document.getElementById("generate").onclick = () => {
+        const csv = csvText;
+        const hugContents = hugCheckbox.checked;
+
         // parent.postMessage({ pluginMessage: { type: "get-csv", csv } }, "*");
-        parent.postMessage({ pluginMessage: { type: "get-csv", csv: csvText } }, "*");
+        parent.postMessage({ pluginMessage: { type: "get-csv", csv, hugContents } }, "*");
+      };
+
+      // Loading state
+      window.onmessage = (event) => {
+        const msg = event.data.pluginMessage;
+        if (msg.type === "loading") {
+          document.getElementById("loading").style.display = msg.status ? "block" : "none";
+        }
       };
     </script>
   </body>

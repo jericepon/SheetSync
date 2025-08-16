@@ -4,44 +4,43 @@ figma.showUI(__html__, { width: 600, height: 600, themeColors: true, visible: tr
 figma.ui.onmessage = async (msg) => {
   if (msg.type === "get-csv")
   {
-    const rows = parseCSV(msg.csv);
+    figma.ui.postMessage({ type: "loading", status: true });
 
+    const rows = parseCSV(msg.csv);
     const selection = figma.currentPage.selection[0];
     if (!selection)
     {
       figma.notify("⚠️ Select a component first!");
+      figma.ui.postMessage({ type: "loading", status: false });
       return;
     }
 
-    // Collect and load fonts for the selection
     const fonts = collectFonts(selection);
     await Promise.all(fonts.map(figma.loadFontAsync));
 
-    rows.forEach((row, i) => {
-      let targetNode;
-      if (i === 0)
+    for (let i = 0; i < rows.length; i++)
+    {
+      let targetNode = i === 0 ? selection : selection.clone();
+      if (i !== 0)
       {
-        // populate the original selection
-        targetNode = selection;
-      } else
-      {
-        // clone for other rows
-        targetNode = selection.clone();
-        if (selection.parent)
-        {
-          selection.parent.appendChild(targetNode);
-        } else
-        {
-          figma.currentPage.appendChild(targetNode);
-        }
+        selection.parent ? selection.parent.appendChild(targetNode) : figma.currentPage.appendChild(targetNode);
         targetNode.x = selection.x + i * (selection.width + 40);
       }
-      replaceFields(targetNode, row);
-    });
+
+      await replaceFields(targetNode, rows[i]);
+
+      // Apply Hug contents if checkbox is checked and node is auto-layout
+      if (msg.hugContents && "layoutMode" in targetNode)
+      {
+        targetNode.counterAxisSizingMode = "AUTO";
+      }
+    }
 
     figma.notify(`✅ Populated ${rows.length} components`);
+    figma.ui.postMessage({ type: "loading", status: false });
   }
 };
+
 
 // --- CSV parser ---
 function parseCSV(csv) {
