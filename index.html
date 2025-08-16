@@ -4,8 +4,9 @@
     <title>Import CSV</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-      /* @font-face {
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+      @font-face {
         font-family: "Dank Mono";
         src: url("DankMono-Regular.ttf") format("truetype");
         font-weight: normal;
@@ -19,74 +20,43 @@
         font-weight: normal;
         font-style: italic;
         font-display: swap;
-      } */
+      }
 
       :root {
         font-family: "Dank Mono", monospace;
-        line-height: 1.5;
-        font-weight: 400;
-
-        color-scheme: light dark;
-        color: rgba(255, 255, 255, 0.87);
-        background-color: #242424;
-
-        font-synthesis: none;
-        text-rendering: optimizeLegibility;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
+        background: var(--figma-color-bg);
+        color: var(---figma-color-text);
       }
 
       body {
-        display: flex;
         padding: 26px;
-        flex-direction: column;
-        gap: 26px;
       }
 
-      button {
-        border-radius: 8px;
-        border: 1px solid transparent;
-        padding: 0.6em 1.2em;
-        font-size: 1em;
-        font-weight: 500;
-        font-family: inherit;
-        background-color: #1a1a1a;
-        cursor: pointer;
-        transition: border-color 0.25s;
-      }
-      button:hover {
-        border-color: #646cff;
-      }
-      button:focus,
-      button:focus-visible {
-        outline: 4px auto -webkit-focus-ring-color;
+      #logo svg {
+        width: 100%;
+        height: 100%;
       }
 
       #csv {
-        border-radius: 8px;
-        padding: 8px;
+        @apply rounded-[8px] p-[12px] border-2;
       }
 
-      #or-divider {
-        text-align: center;
+      #generate {
+        @apply text-red-700;
       }
-      /* @media (prefers-color-scheme: dark) {
-        :root {
-          color: #213547;
-          background-color: #ffffff;
+
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: var(--figma-color-bg);
+          color: var(--figma-color-bg-inverse);
         }
-        a:hover {
-          color: #747bff;
-        }
-        button {
-          background-color: #f9f9f9;
-        }
-      } */
+      }
     </style>
   </head>
   <body>
-    <h3>SheetSync</h3>
-
+    <div class="grid grid-cols-2 w-full items-center justify-center">
+      <div class="text-5xl flex-1 h-full">SheetSync</div>
+    </div>
     <div>
       <label>
         <input type="checkbox" id="hugCheckbox" />
@@ -96,17 +66,25 @@
 
     <div id="loading" style="display: none">Loading…</div>
 
-    <input type="file" id="csvFile" accept=".csv" />
+    <input
+      class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
+      id="csvFile"
+      type="file"
+      id="csvFile"
+      accept=".csv"
+    />
 
     <div id="or-divider">or</div>
 
     <textarea
       id="csv"
       placeholder="Paste CSV here..."
+      class=""
       style="width: 100%; height: 120px"
     ></textarea>
 
     <button id="generate">Import</button>
+
     <script type="module" src="./src/main.ts"></script>
     <script>
       let csvText;
