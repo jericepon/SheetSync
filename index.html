@@ -30,6 +30,7 @@
 
       body {
         padding: 26px;
+        @apply flex flex-col gap-4 items-center justify-center;
       }
 
       #logo svg {
@@ -42,7 +43,7 @@
       }
 
       #generate {
-        @apply text-red-700;
+        /* @apply text-red-700; */
       }
 
       @media (prefers-color-scheme: dark) {
@@ -54,36 +55,70 @@
     </style>
   </head>
   <body>
-    <div class="grid grid-cols-2 w-full items-center justify-center">
-      <div class="text-5xl flex-1 h-full">SheetSync</div>
-    </div>
-    <div>
-      <label>
-        <input type="checkbox" id="hugCheckbox" />
-        Hug contents
-      </label>
-    </div>
+    <div class="text-5xl text-center">SheetSync</div>
 
     <div id="loading" style="display: none">Loading…</div>
 
     <input
-      class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive"
-      id="csvFile"
+      class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border-2 border-stone-300 bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:ring-ring/50 focus-visible:ring-[3px]"
       type="file"
       id="csvFile"
       accept=".csv"
     />
 
-    <div id="or-divider">or</div>
+    <div id="or-divider" class="text-center w-full hidden">OR</div>
 
     <textarea
       id="csv"
-      placeholder="Paste CSV here..."
-      class=""
-      style="width: 100%; height: 120px"
+      rows="3"
+      class="hidden w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6 border-2 border-stone-300"
     ></textarea>
 
-    <button id="generate">Import</button>
+    <div class="flex gap-3">
+      <div class="flex h-6 shrink-0 items-center">
+        <div class="group grid size-4 grid-cols-1">
+          <input
+            id="hugCheckbox"
+            type="checkbox"
+            name="hugCheckbox"
+            class="col-start-1 row-start-1 appearance-none rounded-sm border-2 border-stone-300 bg-white/5 checked:border-indigo-500 checked:bg-indigo-500 indeterminate:border-indigo-500 indeterminate:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 disabled:border-white/5 disabled:bg-white/10 disabled:checked:bg-white/10 forced-colors:appearance-auto"
+          />
+          <svg
+            viewBox="0 0 14 14"
+            fill="none"
+            class="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-disabled:stroke-white/25"
+          >
+            <path
+              d="M3 8L6 11L11 3.5"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="opacity-0 group-has-checked:opacity-100"
+            ></path>
+            <path
+              d="M3 7H11"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="opacity-0 group-has-indeterminate:opacity-100"
+            ></path>
+          </svg>
+        </div>
+      </div>
+      <div class="text-sm/6">
+        <label for="hugCheckbox" class="font-medium">Hug contents</label>
+        <p id="hug-description" class="text-gray-400">
+          Makes the component resize automatically to fit its text content.
+        </p>
+      </div>
+    </div>
+
+    <button
+      id="generate"
+      class="rounded-md bg-indigo-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+    >
+      Generate
+    </button>
 
     <script type="module" src="./src/main.ts"></script>
     <script>

@@ -1,13 +1,17 @@
 // @ts-nocheck
-figma.showUI(__html__, { width: 600, height: 600, themeColors: true, visible: true });
+figma.showUI(__html__, { width: 600, height: 300, themeColors: true, visible: true });
 
 figma.ui.onmessage = async (msg) => {
   if (msg.type === "get-csv")
   {
     figma.ui.postMessage({ type: "loading", status: true });
-
+    if(!msg.csv) {
+      figma.notify("⚠️ No CSV file selected!")
+      return;
+    }
     const rows = parseCSV(msg.csv);
     const selection = figma.currentPage.selection[0];
+
     if (!selection)
     {
       figma.notify("⚠️ Select a component first!");
