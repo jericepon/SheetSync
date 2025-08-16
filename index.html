@@ -133,6 +133,7 @@
 
       document.getElementById("import").onclick = () => {
         const csv = document.getElementById("csv").value;
+        
         // parent.postMessage({ pluginMessage: { type: "get-csv", csv } }, "*");
         parent.postMessage({ pluginMessage: { type: "get-csv", csv: csvText } }, "*");
       };

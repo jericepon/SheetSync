@@ -1,20 +1,5 @@
 // @ts-nocheck
-// You don’t need to change much here
-figma.showUI(__html__, {
-  width: 600,
-  height: 600,
-  themeColors: true,
-  visible: true
-});
-
-// ✅ Allow user to resize freely
-// figma.ui.resize(600, 400) // sets a new size programmatically
-figma.ui.onmessage = (msg) => {
-  if (msg.type === 'resize')
-  {
-    figma.ui.resize(msg.width, msg.height)
-  }
-}
+figma.showUI(__html__, { width: 600, height: 600, themeColors: true, visible: true });
 
 figma.ui.onmessage = async (msg) => {
   if (msg.type === "get-csv")
@@ -28,6 +13,7 @@ figma.ui.onmessage = async (msg) => {
       return;
     }
 
+    // Collect and load fonts for the selection
     const fonts = collectFonts(selection);
     await Promise.all(fonts.map(figma.loadFontAsync));
 
@@ -57,7 +43,6 @@ figma.ui.onmessage = async (msg) => {
   }
 };
 
-
 // --- CSV parser ---
 function parseCSV(csv) {
   const lines = csv.trim().split("\n");
@@ -81,10 +66,7 @@ function collectFonts(node) {
       if (child.type === "TEXT")
       {
         const font = child.fontName;
-        if (font !== figma.mixed)
-        {
-          fonts.push(font);
-        }
+        if (font !== figma.mixed) fonts.push(font);
       }
       fonts = fonts.concat(collectFonts(child));
     }
@@ -92,6 +74,7 @@ function collectFonts(node) {
   return fonts;
 }
 
+// --- Replace text fields recursively ---
 async function replaceFields(node, row) {
   if ("children" in node)
   {
@@ -99,74 +82,31 @@ async function replaceFields(node, row) {
     {
       const name = child.name.trim();
 
-      // Handle text layers
       if (child.type === "TEXT" && name.startsWith("#"))
       {
-        const key = name; // #Title, #Subhead, etc.
+        const key = name.slice(1); // remove #
+
         if (row[key])
         {
-          await figma.loadFontAsync({ family: "Roboto", style: "Regular" });
-          child.characters = row[key];
+          if (child.fontName && child.fontName !== figma.mixed)
+          {
+            try
+            {
+              await figma.loadFontAsync(child.fontName);
+              child.characters = row[key];
+            } catch (err)
+            {
+              console.warn(`⚠️ Failed to load font for "${child.name}":`, err);
+            }
+          } else
+          {
+            console.warn(`⚠️ Skipping "${child.name}" because font is mixed or missing`);
+          }
         }
-      }
-
-      // Handle #Image (including groups)
-      if (name === "#Image")
-      {
-        await handleImageNode(child, row["#Image"]);
       }
 
       // Recurse deeper
       await replaceFields(child, row);
     }
   }
-}
-
-// --- Handle image node (works for Group or shapes) ---
-async function handleImageNode(node, url) {
-  if (!url || !url.startsWith("http")) return;
-
-  // If node supports fills, apply directly
-  if ("fills" in node)
-  {
-    try
-    {
-      const imageBytes = await fetchImage(url);
-      const image = figma.createImage(imageBytes);
-      node.fills = [
-        {
-          type: "IMAGE",
-          scaleMode: "FILL",
-          imageHash: image.hash,
-        },
-      ];
-      return;
-    } catch (err)
-    {
-      console.error("❌ Failed to load image:", err);
-      return;
-    }
-  }
-
-  // If node is a group, search inside for the first fillable shape
-  if ("children" in node)
-  {
-    for (const child of node.children)
-    {
-      if ("fills" in child)
-      {
-        return handleImageNode(child, url); // recurse until fillable
-      }
-    }
-  }
-
-  console.warn(`⚠️ No fillable shape found inside node "${node.name}"`);
-}
-
-// --- Fetch image helper ---
-async function fetchImage(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`);
-  const arrayBuffer = await res.arrayBuffer();
-  return new Uint8Array(arrayBuffer);
 }
