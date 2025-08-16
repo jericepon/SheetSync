@@ -4,127 +4,122 @@
     <title>Import CSV</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="style.css" />
-    <style>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+      @font-face {
+        font-family: "Dank Mono";
+        src: url("DankMono-Regular.ttf") format("truetype");
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      @font-face {
+        font-family: "Dank Mono";
+        src: url("DankMono-Italic.ttf") format("truetype");
+        font-weight: normal;
+        font-style: italic;
+        font-display: swap;
+      }
+
       :root {
-        font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-        line-height: 1.5;
-        font-weight: 400;
-
-        color-scheme: light dark;
-        color: rgba(255, 255, 255, 0.87);
-        background-color: #242424;
-
-        font-synthesis: none;
-        text-rendering: optimizeLegibility;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-      }
-
-      a {
-        font-weight: 500;
-        color: #646cff;
-        text-decoration: inherit;
-      }
-      a:hover {
-        color: #535bf2;
+        font-family: "Dank Mono", monospace;
+        background: var(--figma-color-bg);
+        color: var(---figma-color-text);
       }
 
       body {
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        place-items: center;
-        min-width: 320px;
-        min-height: 100vh;
-        resize: both; /* 👈 allows dragging to resize */
+        padding: 26px;
+        @apply flex flex-col gap-4 items-center justify-center;
       }
 
-      h1 {
-        font-size: 3.2em;
-        line-height: 1.1;
+      #logo svg {
+        width: 100%;
+        height: 100%;
       }
 
-      #app {
-        max-width: 1280px;
-        margin: 0 auto;
-        padding: 2rem;
-        text-align: center;
+      #csv {
+        @apply rounded-[8px] p-[12px] border-2;
       }
 
-      .logo {
-        height: 6em;
-        padding: 1.5em;
-        will-change: filter;
-        transition: filter 300ms;
-      }
-      .logo:hover {
-        filter: drop-shadow(0 0 2em #646cffaa);
-      }
-      .logo.vanilla:hover {
-        filter: drop-shadow(0 0 2em #3178c6aa);
+      #generate {
+        /* @apply text-red-700; */
       }
 
-      .card {
-        padding: 2em;
-      }
-
-      .read-the-docs {
-        color: #888;
-      }
-
-      button {
-        border-radius: 8px;
-        border: 1px solid transparent;
-        padding: 0.6em 1.2em;
-        font-size: 1em;
-        font-weight: 500;
-        font-family: inherit;
-        background-color: #1a1a1a;
-        cursor: pointer;
-        transition: border-color 0.25s;
-      }
-      button:hover {
-        border-color: #646cff;
-      }
-      button:focus,
-      button:focus-visible {
-        outline: 4px auto -webkit-focus-ring-color;
-      }
-
-      @media (prefers-color-scheme: light) {
-        :root {
-          color: #213547;
-          background-color: #ffffff;
-        }
-        a:hover {
-          color: #747bff;
-        }
-        button {
-          background-color: #f9f9f9;
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: var(--figma-color-bg);
+          color: var(--figma-color-bg-inverse);
         }
       }
     </style>
   </head>
   <body>
-    <h3>Upload CSV</h3>
-    <div>
-      <label>
-        <input type="checkbox" id="hugCheckbox" />
-        Hug contents
-      </label>
-    </div>
+    <div class="text-5xl text-center">SheetSync</div>
+
     <div id="loading" style="display: none">Loading…</div>
 
-    <input type="file" id="csvFile" accept=".csv" />
-    <b>OR</b>
+    <input
+      class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border-2 border-stone-300 bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+      type="file"
+      id="csvFile"
+      accept=".csv"
+    />
+
+    <div id="or-divider" class="text-center w-full hidden">OR</div>
+
     <textarea
       id="csv"
-      placeholder="Paste CSV here..."
-      style="width: 100%; height: 120px"
+      rows="3"
+      class="hidden w-full rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 sm:text-sm/6 border-2 border-stone-300"
     ></textarea>
-    <button id="generate">Import</button>
+
+    <div class="flex gap-3">
+      <div class="flex h-6 shrink-0 items-center">
+        <div class="group grid size-4 grid-cols-1">
+          <input
+            id="hugCheckbox"
+            type="checkbox"
+            name="hugCheckbox"
+            class="col-start-1 row-start-1 appearance-none rounded-sm border-2 border-stone-300 bg-white/5 checked:border-indigo-500 checked:bg-indigo-500 indeterminate:border-indigo-500 indeterminate:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 disabled:border-white/5 disabled:bg-white/10 disabled:checked:bg-white/10 forced-colors:appearance-auto"
+          />
+          <svg
+            viewBox="0 0 14 14"
+            fill="none"
+            class="pointer-events-none col-start-1 row-start-1 size-3.5 self-center justify-self-center stroke-white group-has-disabled:stroke-white/25"
+          >
+            <path
+              d="M3 8L6 11L11 3.5"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="opacity-0 group-has-checked:opacity-100"
+            ></path>
+            <path
+              d="M3 7H11"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="opacity-0 group-has-indeterminate:opacity-100"
+            ></path>
+          </svg>
+        </div>
+      </div>
+      <div class="text-sm/6">
+        <label for="hugCheckbox" class="font-medium">Hug contents</label>
+        <p id="hug-description" class="text-gray-400">
+          Makes the component resize automatically to fit its text content.
+        </p>
+      </div>
+    </div>
+
+    <button
+      id="generate"
+      class="rounded-md bg-indigo-500 px-3.5 py-2.5 text-sm font-semibold text-white shadow-xs hover:bg-indigo-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+    >
+      Generate
+    </button>
+
     <script type="module" src="./src/main.ts"></script>
     <script>
       let csvText;
