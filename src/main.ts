@@ -1,88 +1,99 @@
 // @ts-nocheck
-figma.showUI(__html__, { width: 600, height: 300, themeColors: true, visible: true });
+figma.showUI(__html__, { width: 600, height: 300 });
 
 figma.ui.onmessage = async (msg) => {
-  if (msg.type === "get-csv") {
-    const rows = parseCSV(msg.csv);
-    const selection = figma.currentPage.selection[0];
+  if (msg.type !== "populate-excel") return;
 
-    if (!selection) {
-      figma.notify("⚠️ Select a component first!");
-      return;
-    }
+  const rows = msg.data;
+  if (!rows.length) return figma.notify("No data found in spreadsheet");
 
-    // Collect and load all fonts once
-    const fonts = collectFonts(selection);
-    await Promise.all(fonts.map(figma.loadFontAsync));
-
-    let missingKeys = new Set();
-
-    rows.forEach((row, i) => {
-      let node;
-      if (i === 0) {
-        node = selection;
-      } else {
-        node = selection.clone();
-        (selection.parent || figma.currentPage).appendChild(node);
-        node.x = selection.x + i * (selection.width + 40);
-      }
-      replaceFields(node, row, missingKeys);
-    });
-
-    // Notify about missing keys
-    if (missingKeys.size > 0) {
-      figma.notify(`⚠️ Missing CSV columns for: ${Array.from(missingKeys).join(", ")}`);
-    }
-
-    figma.notify(`✅ Populated ${rows.length} components`);
-    figma.closePlugin();
+  const selection = figma.currentPage.selection;
+  if (selection.length !== 1 || selection[0].type !== "INSTANCE") {
+    figma.notify("Please select a single instance of a component");
+    return;
   }
-};
 
-// --- CSV parser ---
-function parseCSV(csv) {
-  const lines = csv.trim().split("\n");
-  const headers = lines[0].split(",").map(h => h.trim());
-  return lines.slice(1).map(line => {
-    const values = line.split(",");
-    return headers.reduce((obj, key, i) => {
-      obj[key] = values[i] ? values[i].trim() : "";
-      return obj;
-    }, {});
-  });
-}
+  const instance = selection[0];
+  const parent = instance.parent;
+  const spacing = 20;
+  let currentY = instance.y - parent.y;
 
-// --- Collect all fonts used recursively ---
-function collectFonts(node) {
-  let fonts = [];
-  if ("children" in node) {
-    for (const child of node.children) {
-      if (child.type === "TEXT" && child.fontName !== figma.mixed) {
-        fonts.push(child.fontName);
-      }
-      fonts = fonts.concat(collectFonts(child));
-    }
-  }
-  return fonts;
-}
+  // Remove old duplicates
+  parent.children
+    .filter(c => c.getPluginData("duplicated") === "true")
+    .forEach(c => c.remove());
 
-// --- Replace text layers recursively and highlight missing ---
-function replaceFields(node, row, missingKeys) {
-  if ("children" in node) {
-    for (const child of node.children) {
-      if (child.type === "TEXT" && child.name.startsWith("#")) {
-        const key = child.name.slice(1).trim(); // remove # and trim
-        if (row[key] !== undefined) {
-          child.characters = row[key];
-          // Reset fill in case it was previously highlighted
-          child.fills = [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }];
-        } else {
-          missingKeys.add(key);
-          // Highlight missing layer in bright red
-          child.fills = [{ type: "SOLID", color: { r: 1, g: 0, b: 0 } }];
+  // Helper: remove numbers/symbols and lowercase
+  const normalize = (name: string) => name.toLowerCase().replace(/[^a-z]/g, '');
+
+  // Find matching column in row for a given key
+  const findColumnForKey = (row, key) => {
+    const normKey = normalize(key);
+    return Object.keys(row).find(col => normalize(col).includes(normKey));
+  };
+
+  const populateInstance = async (target, row, rowIndex) => {
+    // --- Populate # TEXT NODES ---
+    const textNodes = target.findAll(n => n.type === "TEXT" && n.name.startsWith("#"));
+    for (const node of textNodes) {
+      const cleanedName = node.name.replace(/^#/, '');
+      const columnKey = findColumnForKey(row, cleanedName);
+      if (columnKey && row[columnKey] !== undefined) {
+        try {
+          if (node.fontName) await figma.loadFontAsync(node.fontName);
+          node.characters = String(row[columnKey]).trim();
+        } catch (err) {
+          console.log("Font load failed", node.name, err);
         }
       }
-      replaceFields(child, row, missingKeys); // recurse
+    }
+
+    // --- Populate COMPONENT PROPERTIES ---
+    const props = target.componentProperties;
+    for (const key in props) {
+      const columnKey = findColumnForKey(row, key);
+      if (!columnKey) continue;
+
+      const value = row[columnKey];
+      const prop = props[key];
+
+      try {
+        switch (prop.type) {
+          case "VARIANT":
+            target.setProperties({ [key]: String(value).trim() });
+            break;
+          case "BOOLEAN":
+            target.setProperties({ [key]: Boolean(value) });
+            break;
+          case "TEXT":
+            if (prop.fontName) await figma.loadFontAsync(prop.fontName);
+            target.setProperties({ [key]: String(value).trim() });
+            break;
+        }
+      } catch (err) {
+        console.log(`Property set failed '${key}'`, err);
+      }
+    }
+  };
+
+  // Populate original instance with first row
+  await populateInstance(instance, rows[0], 0);
+
+  // Duplicate remaining rows
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const clone = instance.clone();
+    clone.setPluginData("duplicated", "true");
+    parent.appendChild(clone);
+
+    await populateInstance(clone, row, i);
+
+    if (parent.layoutMode === "NONE") {
+      clone.x = instance.x - parent.x;
+      clone.y = currentY;
+      currentY += clone.height + spacing;
     }
   }
-}
+
+  figma.notify(`Populated ${rows.length} rows`);
+};
