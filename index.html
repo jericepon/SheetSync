@@ -32,17 +32,23 @@
       }
 
       @layer components {
-        .btn {
-          @apply w-full hover:opacity-90 flex justify-center items-center cursor-pointer text-lg text-[var(--color-background)] border-1 border-[var(--color-border)] rounded-[var(--radius)] bg-[var(--color-foreground)] p-[var(--button-padding-x)] gap-[var(--gap)];
+        #upload-btn {
+          @apply font-bold w-full hover:opacity-90 flex justify-center items-center cursor-pointer text-lg text-[var(--color-background)] border-1 border-[var(--color-border)] rounded-[var(--radius)] bg-[var(--color-foreground)] p-[var(--button-padding-x)] gap-[var(--gap)];
         }
-        .icon {
-          width: 14px;
+        #icon {
+          width: 23px;
           svg {
             @apply w-full h-full;
+            stroke: currentColor;
           }
         }
         .container {
-          @apply flex flex-col items-center justify-center m-auto h-full w-full gap-[26px] p-[var(--card-padding-x)];
+          @apply w-full  flex flex-col items-center justify-center m-auto h-full w-full gap-[26px] p-[var(--card-padding-x)];
+        }
+        #logo {
+          svg {
+            @apply w-full h-full;
+          }
         }
       }
 
@@ -64,7 +70,7 @@
 
       body,
       html {
-        @apply flex flex-col items-center justify-center m-0 max-h-screen;
+        @apply flex flex-col items-center justify-center m-0 max-h-screen w-full;
         background-color: var(--color-background);
         color: var(--color-foreground);
       }
@@ -72,40 +78,101 @@
   </head>
   <body>
     <div class="container">
-      <div id="heading" class="text-2xl font-bold text-center w-full">SheetSync</div>
-      <input type="file" id="fileInput" accept=".xlsx, .xls" class="text-center w-full" />
-      <button id="uploadBtn" class="btn">
-        <span>Upload & Populate</span>
-        <div class="icon">
+      <div id="heading" class="flex text-4xl font-bold text-center w-full gap-4 items-center justify-center">
+        <div id="logo" class="w-[52px] svg:w-full svg:h-full">
           <svg
-            width="14"
-            height="15"
-            viewBox="0 0 14 15"
+            width="96"
+            height="96"
+            viewBox="0 0 96 96"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <g clip-path="url(#clip0_8_103)">
+              <rect width="96" height="96" rx="8" fill="#E3E3E3" />
+              <path d="M0 8C0 3.58172 3.58172 0 8 0H48V48H0V8Z" fill="#1E1E1E" />
+              <path
+                d="M27.3333 7.33333H14C13.1159 7.33333 12.2681 7.68452 11.6429 8.30964C11.0178 8.93476 10.6666 9.78261 10.6666 10.6667V37.3333C10.6666 38.2174 11.0178 39.0652 11.6429 39.6904C12.2681 40.3155 13.1159 40.6667 14 40.6667H34C34.884 40.6667 35.7319 40.3155 36.357 39.6904C36.9821 39.0652 37.3333 38.2174 37.3333 37.3333V17.3333M27.3333 7.33333L37.3333 17.3333M27.3333 7.33333V17.3333H37.3333M30.6666 25.6667H17.3333M30.6666 32.3333H17.3333M20.6666 19H17.3333"
+                stroke="white"
+                stroke-width="4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path d="M48 0H88C92.4183 0 96 3.58172 96 8V48H48V0Z" fill="white" />
+              <path
+                d="M72 9H83.6667C84.5507 9 85.3986 9.35119 86.0237 9.97631C86.6488 10.6014 87 11.4493 87 12.3333V35.6667C87 36.5507 86.6488 37.3986 86.0237 38.0237C85.3986 38.6488 84.5507 39 83.6667 39H72M72 9H60.3333C59.4493 9 58.6014 9.35119 57.9763 9.97631C57.3512 10.6014 57 11.4493 57 12.3333V35.6667C57 36.5507 57.3512 37.3986 57.9763 38.0237C58.6014 38.6488 59.4493 39 60.3333 39H72M72 9V39"
+                stroke="#2C2C2C"
+                stroke-width="4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path d="M0 48H48V96H8C3.58172 96 0 92.4183 0 88V48Z" fill="white" />
+              <g clip-path="url(#clip1_8_103)">
+                <path
+                  d="M42.3333 58.6667V68.6667M42.3333 68.6667H32.3333M42.3333 68.6667L34.6 61.4C32.8087 59.6078 30.5927 58.2987 28.1586 57.5946C25.7245 56.8906 23.1518 56.8146 20.6804 57.3738C18.2091 57.9329 15.9196 59.109 14.0257 60.7924C12.1318 62.4757 10.6952 64.6113 9.84996 67M5.66663 85.3333V75.3333M5.66663 75.3333H15.6666M5.66663 75.3333L13.4 82.6C15.1912 84.3921 17.4072 85.7013 19.8413 86.4054C22.2754 87.1094 24.8481 87.1854 27.3195 86.6262C29.7908 86.0671 32.0803 84.8909 33.9742 83.2076C35.8681 81.5243 37.3047 79.3887 38.15 77"
+                  stroke="#2C2C2C"
+                  stroke-width="4"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </g>
+              <path d="M48 48H96V88C96 92.4183 92.4183 96 88 96H48V48Z" fill="#1E1E1E" />
+              <path
+                d="M79.5 67.6667L64.5 59.0167M57.45 63.6L72 72.0167L86.55 63.6M72 88.8V72M87 78.6667V65.3333C86.9994 64.7488 86.8451 64.1747 86.5526 63.6686C86.26 63.1625 85.8396 62.7423 85.3333 62.45L73.6667 55.7833C73.1599 55.4908 72.5851 55.3367 72 55.3367C71.4149 55.3367 70.8401 55.4908 70.3333 55.7833L58.6667 62.45C58.1604 62.7423 57.74 63.1625 57.4474 63.6686C57.1549 64.1747 57.0006 64.7488 57 65.3333V78.6667C57.0006 79.2512 57.1549 79.8253 57.4474 80.3314C57.74 80.8375 58.1604 81.2577 58.6667 81.55L70.3333 88.2167C70.8401 88.5092 71.4149 88.6632 72 88.6632C72.5851 88.6632 73.1599 88.5092 73.6667 88.2167L85.3333 81.55C85.8396 81.2577 86.26 80.8375 86.5526 80.3314C86.8451 79.8253 86.9994 79.2512 87 78.6667Z"
+                stroke="white"
+                stroke-width="4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </g>
+            <rect x="0.5" y="0.5" width="95" height="95" rx="7.5" stroke="#434343" />
+            <defs>
+              <clipPath id="clip0_8_103">
+                <rect width="96" height="96" rx="8" fill="white" />
+              </clipPath>
+              <clipPath id="clip1_8_103">
+                <path d="M4 52H44V84C44 88.4183 40.4183 92 36 92H4V52Z" fill="white" />
+              </clipPath>
+            </defs>
+          </svg>
+        </div>
+
+        SheetSync
+      </div>
+
+      <label for="fileInput" id="upload-btn">
+        <input type="file" id="fileInput" accept=".xlsx, .xls" class="text-center w-full hidden" />
+        <div class="label" id="file-name">Select a file</div>
+        <div id="icon">
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 48 48"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
             <path
-              d="M13 9.30115V11.9678C13 12.3214 12.8595 12.6606 12.6095 12.9106C12.3594 13.1607 12.0203 13.3011 11.6667 13.3011H2.33333C1.97971 13.3011 1.64057 13.1607 1.39052 12.9106C1.14048 12.6606 1 12.3214 1 11.9678V9.30115M10.3333 4.63448L7 1.30115M7 1.30115L3.66667 4.63448M7 1.30115V9.30115"
-              stroke="#2C2C2C"
-              stroke-width="1.6"
+              d="M28 4H12C10.9391 4 9.92172 4.42143 9.17157 5.17157C8.42143 5.92172 8 6.93913 8 8V40C8 41.0609 8.42143 42.0783 9.17157 42.8284C9.92172 43.5786 10.9391 44 12 44H36C37.0609 44 38.0783 43.5786 38.8284 42.8284C39.5786 42.0783 40 41.0609 40 40V16M28 4L40 16M28 4V16H40M32 26H16M32 34H16M20 18H16"
+              stroke-width="4"
               stroke-linecap="round"
               stroke-linejoin="round"
             />
           </svg>
         </div>
-      </button>
+      </label>
     </div>
 
     <script type="module" src="./src/main.ts"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script>
       const input = document.getElementById("fileInput");
-      const btn = document.getElementById("uploadBtn");
+      const fileName = document.getElementById("file-name");
 
-      btn.onclick = () => {
+      input.onchange = () => {
         const file = input.files[0];
-        if (!file) return alert("Please select an Excel file");
+        fileName.textContent = "No file selected";
 
+        if (!file) return parent.postMessage({ pluginMessage: { type: "no-file" } }, "*");
+        fileName.textContent = file.name;
         const reader = new FileReader();
         reader.onload = (e) => {
           const data = new Uint8Array(e.target.result);

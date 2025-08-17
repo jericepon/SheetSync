@@ -1,15 +1,34 @@
 // @ts-nocheck
-figma.showUI(__html__, { width: 300, height: 300 });
+figma.showUI(__html__, { width: 600, height: 300, themeColors: true, title: "SheetSync" });
 
 figma.ui.onmessage = async (msg) => {
+  // No file selected
+  if (msg.type === "no-file")
+  {
+    figma.notify("⚠️ No file selected.", {
+      timeout: 6000,
+      error: true,
+    });
+    return;
+  };
+
+  // No rows
+  const rows = msg.data;
+  if (!rows.length)
+  {
+    figma.notify(`⚠️ This file have ${rows.length} row.`, {
+      timeout: 6000,
+      error: true,
+    });
+    return;
+  }
+
   if (msg.type !== "populate-excel") return;
 
-  const rows = msg.data;
-  if (!rows.length) return figma.notify("No data found in spreadsheet");
-
   const selection = figma.currentPage.selection;
-  if (selection.length !== 1 || selection[0].type !== "INSTANCE") {
-    figma.notify("Please select a single instance of a component");
+  if (selection.length !== 1 || selection[0].type !== "INSTANCE")
+  {
+    figma.notify("📦 Please select a single instance of a component.");
     return;
   }
 
@@ -35,14 +54,18 @@ figma.ui.onmessage = async (msg) => {
   const populateInstance = async (target, row, rowIndex) => {
     // --- Populate # TEXT NODES ---
     const textNodes = target.findAll(n => n.type === "TEXT" && n.name.startsWith("#"));
-    for (const node of textNodes) {
+    for (const node of textNodes)
+    {
       const cleanedName = node.name.replace(/^#/, '');
       const columnKey = findColumnForKey(row, cleanedName);
-      if (columnKey && row[columnKey] !== undefined) {
-        try {
+      if (columnKey && row[columnKey] !== undefined)
+      {
+        try
+        {
           if (node.fontName) await figma.loadFontAsync(node.fontName);
           node.characters = String(row[columnKey]).trim();
-        } catch (err) {
+        } catch (err)
+        {
           console.log("Font load failed", node.name, err);
         }
       }
@@ -50,15 +73,18 @@ figma.ui.onmessage = async (msg) => {
 
     // --- Populate COMPONENT PROPERTIES ---
     const props = target.componentProperties;
-    for (const key in props) {
+    for (const key in props)
+    {
       const columnKey = findColumnForKey(row, key);
       if (!columnKey) continue;
 
       const value = row[columnKey];
       const prop = props[key];
 
-      try {
-        switch (prop.type) {
+      try
+      {
+        switch (prop.type)
+        {
           case "VARIANT":
             target.setProperties({ [key]: String(value).trim() });
             break;
@@ -70,7 +96,8 @@ figma.ui.onmessage = async (msg) => {
             target.setProperties({ [key]: String(value).trim() });
             break;
         }
-      } catch (err) {
+      } catch (err)
+      {
         console.log(`Property set failed '${key}'`, err);
       }
     }
@@ -80,7 +107,8 @@ figma.ui.onmessage = async (msg) => {
   await populateInstance(instance, rows[0], 0);
 
   // Duplicate remaining rows
-  for (let i = 1; i < rows.length; i++) {
+  for (let i = 1; i < rows.length; i++)
+  {
     const row = rows[i];
     const clone = instance.clone();
     clone.setPluginData("duplicated", "true");
@@ -88,7 +116,8 @@ figma.ui.onmessage = async (msg) => {
 
     await populateInstance(clone, row, i);
 
-    if (parent.layoutMode === "NONE") {
+    if (parent.layoutMode === "NONE")
+    {
       clone.x = instance.x - parent.x;
       clone.y = currentY;
       currentY += clone.height + spacing;

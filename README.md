@@ -1,4 +1,8 @@
-# Figma Excel Population Plugin
+<p align="center">
+    <img src="public/logo.svg" style="width: 300px;">
+</p>
+
+# SheetSync
 
 A Figma plugin that automatically populates component instances using data from Excel or Google Sheets exports. Ideal for design systems, dashboards, and repetitive UI elements.
 
@@ -41,19 +45,18 @@ Title | Description | Subhead | State | Size | Show Description
 | Server Upgrade | Upgrade backend servers to v2.1 | Backend | Active   | Large | TRUE             |
 | Login Feature  | Implement OAuth2 login          | Auth    | Inactive | Small | TRUE             |
 
-## Installation
+<!-- ## Installation
 
 1. Open Figma → `Plugins` → `Development` → `Import Plugin from Manifest…`.
 2. Select the plugin folder containing `manifest.json` and source files.
-3. Your plugin is now available under `Plugins → Development`.
+3. Your plugin is now available under `Plugins → Development`. -->
 
 ## Usage
 
 1. Select a single instance of your component in Figma.
 2. Open the plugin.
-3. Upload your Excel file (`.xlsx` or `.xls`).
-4. Click **Upload & Populate**.
-5. The plugin will duplicate the instance for each row and populate the layers and component properties automatically.
+3. Select and Upload your Excel file (`.xlsx` or `.xls`).
+4. The plugin will duplicate the instance for each row and populate the layers and component properties automatically.
 
 ## Notes
 
@@ -62,13 +65,13 @@ Title | Description | Subhead | State | Size | Show Description
 - Works for any number of rows in the spreadsheet.
 - Supports future components with new props as long as the spreadsheet columns match.
 
-## Contributing
+<!-- ## Contributing
 
 Feel free to fork this repository and add features, such as:
 
 - Nested component support
 - Conditional logic based on spreadsheet values
-- Integration with Google Sheets API
+- Integration with Google Sheets API -->
 
 ## License
 
