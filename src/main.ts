@@ -1,88 +1,78 @@
 // @ts-nocheck
-figma.showUI(__html__, { width: 600, height: 300, themeColors: true, visible: true });
+figma.showUI(__html__, { width: 400, height: 100 });
 
 figma.ui.onmessage = async (msg) => {
-  if (msg.type === "get-csv") {
-    const rows = parseCSV(msg.csv);
-    const selection = figma.currentPage.selection[0];
+  if (msg.type !== "populate-excel") return;
 
-    if (!selection) {
-      figma.notify("⚠️ Select a component first!");
-      return;
-    }
+  const rows = msg.data; // JSON array from Excel
+  const selection = figma.currentPage.selection;
 
-    // Collect and load all fonts once
-    const fonts = collectFonts(selection);
-    await Promise.all(fonts.map(figma.loadFontAsync));
-
-    let missingKeys = new Set();
-
-    rows.forEach((row, i) => {
-      let node;
-      if (i === 0) {
-        node = selection;
-      } else {
-        node = selection.clone();
-        (selection.parent || figma.currentPage).appendChild(node);
-        node.x = selection.x + i * (selection.width + 40);
-      }
-      replaceFields(node, row, missingKeys);
-    });
-
-    // Notify about missing keys
-    if (missingKeys.size > 0) {
-      figma.notify(`⚠️ Missing CSV columns for: ${Array.from(missingKeys).join(", ")}`);
-    }
-
-    figma.notify(`✅ Populated ${rows.length} components`);
-    figma.closePlugin();
+  if (selection.length !== 1 || selection[0].type !== "INSTANCE") {
+    figma.notify("Please select a single instance of a component");
+    return;
   }
+
+  const instance = selection[0];
+  const parent = instance.parent;
+  console.log(instance.componentProperties);
+  
+  // Remove old duplicates
+  parent.children
+    .filter((c) => c.getPluginData("duplicated") === "true")
+    .forEach((c) => c.remove());
+
+  const spacing = 20; // used only for non-auto-layout frames
+  let currentY = 0; // relative to parent
+
+  // Function to populate text layers safely with existing font
+  const populateInstance = async (target, row) => {
+    const textNodes = target.findAll(
+      (node) => node.type === "TEXT" && node.name.startsWith("#")
+    );
+
+    for (const node of textNodes) {
+      const key = node.name.replace(/^#/, "");
+      if (row[key] !== undefined) {
+        // Load the node's existing font first
+        await figma.loadFontAsync(node.fontName);
+        node.characters = String(row[key]);
+      }
+    }
+  };
+
+  if (parent.layoutMode === "NONE") {
+    // Non-auto-layout frame: manually stack clones
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const target = i === 0 ? instance : instance.clone();
+
+      if (i !== 0) {
+        target.setPluginData("duplicated", "true");
+        parent.appendChild(target);
+      }
+
+      await populateInstance(target, row);
+
+      // Position relative to parent
+      target.x = instance.x - parent.x;
+      target.y = currentY;
+
+      currentY += target.height + spacing;
+    }
+  } else {
+    // Auto-layout frame: just append clones, let Figma handle spacing
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const target = i === 0 ? instance : instance.clone();
+
+      if (i !== 0) {
+        target.setPluginData("duplicated", "true");
+        parent.appendChild(target);
+      }
+
+      await populateInstance(target, row);
+    }
+  }
+
+  figma.notify(`Populated ${rows.length} rows`);
 };
-
-// --- CSV parser ---
-function parseCSV(csv) {
-  const lines = csv.trim().split("\n");
-  const headers = lines[0].split(",").map(h => h.trim());
-  return lines.slice(1).map(line => {
-    const values = line.split(",");
-    return headers.reduce((obj, key, i) => {
-      obj[key] = values[i] ? values[i].trim() : "";
-      return obj;
-    }, {});
-  });
-}
-
-// --- Collect all fonts used recursively ---
-function collectFonts(node) {
-  let fonts = [];
-  if ("children" in node) {
-    for (const child of node.children) {
-      if (child.type === "TEXT" && child.fontName !== figma.mixed) {
-        fonts.push(child.fontName);
-      }
-      fonts = fonts.concat(collectFonts(child));
-    }
-  }
-  return fonts;
-}
-
-// --- Replace text layers recursively and highlight missing ---
-function replaceFields(node, row, missingKeys) {
-  if ("children" in node) {
-    for (const child of node.children) {
-      if (child.type === "TEXT" && child.name.startsWith("#")) {
-        const key = child.name.slice(1).trim(); // remove # and trim
-        if (row[key] !== undefined) {
-          child.characters = row[key];
-          // Reset fill in case it was previously highlighted
-          child.fills = [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }];
-        } else {
-          missingKeys.add(key);
-          // Highlight missing layer in bright red
-          child.fills = [{ type: "SOLID", color: { r: 1, g: 0, b: 0 } }];
-        }
-      }
-      replaceFields(child, row, missingKeys); // recurse
-    }
-  }
-}

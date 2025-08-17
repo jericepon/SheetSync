@@ -12,7 +12,8 @@
   "ui": "index.html",
   "networkAccess": {
     "allowedDomains": [
-      "https://cdn.jsdelivr.net"
+      "https://cdn.jsdelivr.net",
+      "https://cdn.sheetjs.com"
     ]
   }
 }
