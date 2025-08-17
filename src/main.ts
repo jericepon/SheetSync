@@ -1,12 +1,13 @@
 // @ts-nocheck
-figma.showUI(__html__, { width: 400, height: 100 });
+figma.showUI(__html__, { width: 600, height: 300 });
 
 figma.ui.onmessage = async (msg) => {
   if (msg.type !== "populate-excel") return;
 
-  const rows = msg.data; // JSON array from Excel
-  const selection = figma.currentPage.selection;
+  const rows = msg.data;
+  if (!rows.length) return figma.notify("No data found in spreadsheet");
 
+  const selection = figma.currentPage.selection;
   if (selection.length !== 1 || selection[0].type !== "INSTANCE") {
     figma.notify("Please select a single instance of a component");
     return;
@@ -14,63 +15,83 @@ figma.ui.onmessage = async (msg) => {
 
   const instance = selection[0];
   const parent = instance.parent;
-  console.log(instance.componentProperties);
-  
+  const spacing = 20;
+  let currentY = instance.y - parent.y;
+
   // Remove old duplicates
   parent.children
-    .filter((c) => c.getPluginData("duplicated") === "true")
-    .forEach((c) => c.remove());
+    .filter(c => c.getPluginData("duplicated") === "true")
+    .forEach(c => c.remove());
 
-  const spacing = 20; // used only for non-auto-layout frames
-  let currentY = 0; // relative to parent
+  // Helper: remove numbers/symbols and lowercase
+  const normalize = (name: string) => name.toLowerCase().replace(/[^a-z]/g, '');
 
-  // Function to populate text layers safely with existing font
-  const populateInstance = async (target, row) => {
-    const textNodes = target.findAll(
-      (node) => node.type === "TEXT" && node.name.startsWith("#")
-    );
+  // Find matching column in row for a given key
+  const findColumnForKey = (row, key) => {
+    const normKey = normalize(key);
+    return Object.keys(row).find(col => normalize(col).includes(normKey));
+  };
 
+  const populateInstance = async (target, row, rowIndex) => {
+    // --- Populate # TEXT NODES ---
+    const textNodes = target.findAll(n => n.type === "TEXT" && n.name.startsWith("#"));
     for (const node of textNodes) {
-      const key = node.name.replace(/^#/, "");
-      if (row[key] !== undefined) {
-        // Load the node's existing font first
-        await figma.loadFontAsync(node.fontName);
-        node.characters = String(row[key]);
+      const cleanedName = node.name.replace(/^#/, '');
+      const columnKey = findColumnForKey(row, cleanedName);
+      if (columnKey && row[columnKey] !== undefined) {
+        try {
+          if (node.fontName) await figma.loadFontAsync(node.fontName);
+          node.characters = String(row[columnKey]).trim();
+        } catch (err) {
+          console.log("Font load failed", node.name, err);
+        }
+      }
+    }
+
+    // --- Populate COMPONENT PROPERTIES ---
+    const props = target.componentProperties;
+    for (const key in props) {
+      const columnKey = findColumnForKey(row, key);
+      if (!columnKey) continue;
+
+      const value = row[columnKey];
+      const prop = props[key];
+
+      try {
+        switch (prop.type) {
+          case "VARIANT":
+            target.setProperties({ [key]: String(value).trim() });
+            break;
+          case "BOOLEAN":
+            target.setProperties({ [key]: Boolean(value) });
+            break;
+          case "TEXT":
+            if (prop.fontName) await figma.loadFontAsync(prop.fontName);
+            target.setProperties({ [key]: String(value).trim() });
+            break;
+        }
+      } catch (err) {
+        console.log(`Property set failed '${key}'`, err);
       }
     }
   };
 
-  if (parent.layoutMode === "NONE") {
-    // Non-auto-layout frame: manually stack clones
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      const target = i === 0 ? instance : instance.clone();
+  // Populate original instance with first row
+  await populateInstance(instance, rows[0], 0);
 
-      if (i !== 0) {
-        target.setPluginData("duplicated", "true");
-        parent.appendChild(target);
-      }
+  // Duplicate remaining rows
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const clone = instance.clone();
+    clone.setPluginData("duplicated", "true");
+    parent.appendChild(clone);
 
-      await populateInstance(target, row);
+    await populateInstance(clone, row, i);
 
-      // Position relative to parent
-      target.x = instance.x - parent.x;
-      target.y = currentY;
-
-      currentY += target.height + spacing;
-    }
-  } else {
-    // Auto-layout frame: just append clones, let Figma handle spacing
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      const target = i === 0 ? instance : instance.clone();
-
-      if (i !== 0) {
-        target.setPluginData("duplicated", "true");
-        parent.appendChild(target);
-      }
-
-      await populateInstance(target, row);
+    if (parent.layoutMode === "NONE") {
+      clone.x = instance.x - parent.x;
+      clone.y = currentY;
+      currentY += clone.height + spacing;
     }
   }
 
