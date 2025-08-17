@@ -1,5 +1,5 @@
 // @ts-nocheck
-figma.showUI(__html__, { width: 600, height: 300 });
+figma.showUI(__html__, { width: 300, height: 300 });
 
 figma.ui.onmessage = async (msg) => {
   if (msg.type !== "populate-excel") return;
