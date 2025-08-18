@@ -63,7 +63,7 @@ Title | Description | Subhead | State | Size | Show Description
 - Ensure the component instance is **selected** before running the plugin.
 - The plugin automatically keeps duplicates inside the parent frame.
 - Works for any number of rows in the spreadsheet.
-- Supports future components with new props as long as the spreadsheet columns match.
+- Supports components with new props as long as the spreadsheet columns match.
 
 <!-- ## Contributing
 
@@ -73,6 +73,6 @@ Feel free to fork this repository and add features, such as:
 - Conditional logic based on spreadsheet values
 - Integration with Google Sheets API -->
 
-## License
+<!-- ## License
 
-MIT License
+MIT License -->

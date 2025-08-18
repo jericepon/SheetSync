@@ -78,27 +78,43 @@ figma.ui.onmessage = async (msg) => {
       const columnKey = findColumnForKey(row, key);
       if (!columnKey) continue;
 
-      const value = row[columnKey];
+      const rawValue = row[columnKey];
       const prop = props[key];
 
       try
       {
         switch (prop.type)
         {
-          case "VARIANT":
-            target.setProperties({ [key]: String(value).trim() });
+          case "VARIANT": {
+            // If this is actually a Boolean variant (like Dark / Active)
+            if (["true", "false", "1", "0", "yes", "no"].includes(String(rawValue).toLowerCase()))
+            {
+              const boolValue = ["true", "1", "yes"].includes(String(rawValue).toLowerCase());
+              target.setProperties({ [key]: boolValue ? "True" : "False" });
+            } else
+            {
+              // fallback for other variant properties with text values
+              const val = String(rawValue).trim();
+              target.setProperties({ [key]: val });
+            }
             break;
+          }
+
           case "BOOLEAN":
-            target.setProperties({ [key]: Boolean(value) });
+            // (This is for actual component Boolean props, not variants)
+            target.setProperties({
+              [key]: ["true", "1", "yes"].includes(String(rawValue).toLowerCase())
+            });
             break;
+
           case "TEXT":
             if (prop.fontName) await figma.loadFontAsync(prop.fontName);
-            target.setProperties({ [key]: String(value).trim() });
+            target.setProperties({ [key]: String(rawValue).trim() });
             break;
         }
       } catch (err)
       {
-        console.log(`Property set failed '${key}'`, err);
+        console.log(`Property set failed '${key}' with value '${rawValue}'`, err);
       }
     }
   };
